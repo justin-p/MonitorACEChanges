@@ -12,17 +12,55 @@ Function Return-Facts {
         $AttributeValue = $AttributeValue,
         $KnownGoodSDDL = $KnownGoodSDDL
     )
+    $NewSDDLString       = ConvertFrom-SddlString $AttributeValue
+    $NewDiscretionaryAcl = $NewSDDLString.DiscretionaryAcl
     if ($KnownGoodSDDL) {
-        $KnownGoodDiscretionaryAcl = $((ConvertFrom-SddlString $KnownGoodSDDL).DiscretionaryAcl)
-        $Diff = Compare-Object $((ConvertFrom-SddlString $AttributeValue).DiscretionaryAcl).split() $((ConvertFrom-SddlString $KnownGoodSDDL).DiscretionaryAcl).split()
-    } Else {
+        $KnownGoodSDDLString       = ConvertFrom-SddlString $KnownGoodSDDL
+        $KnownGoodDiscretionaryAcl = $KnownGoodSDDLString.DiscretionaryAcl
+        $Known_Object =@()
+        $New_Object   =@()
+
+        ForEach ($ACL in $NewSDDLString) {
+            $owner  = $ACl.Owner 
+            $group  = $ACl.Group
+            $ACLobj = @()
+            ForEach ($ACE in $ACL.DiscretionaryAcl) {
+                $user   = $ACE.split(':')[0]
+                $rights = $ACE.split(':')[1]
+                $ACLobj+= (New-Object psobject -Property @{User = $user;Rights = $rights})                
+            }
+            $New_Object+= (New-Object psobject -Property @{State='New value';owner=$owner;group=$group;ACL=$ACLobj})                
+        }
+
+        ForEach ($ACL in $KnownGoodSDDLString) {
+            $owner  = $ACl.Owner 
+            $group  = $ACl.Group
+            $ACLobj = @()
+            ForEach ($ACE in $ACL.DiscretionaryAcl) {
+                $user   = $ACE.split(':')[0]
+                $rights = $ACE.split(':')[1]
+                $ACLobj+= (New-Object psobject -Property @{User = $user;Rights = $rights})                
+            }
+            $Known_Object+= (New-Object psobject -Property @{State='Known good value';owner=$owner;group=$group;ACL=$ACLobj})                
+        }
+
+
+        $New   = (New-Object psobject -Property @{State=$New_Object.state;owner=$New_Object.owner;group=$New_Object.group;ACL=$($New_Object.acl | Sort-Object -Unique User,Rights)})
+        $Known = (New-Object psobject -Property @{State=$Known_Object.state;owner=$Known_Object.owner;group=$Known_Object.group;ACL=$($Known_Object.acl | Sort-Object -Unique User,Rights)})
+        
+        
+        $ACLDiff   = Compare-Object $Known.acl $New.acl -Property user,rights | Where-Object {$_.sideindicator -eq "=>"} | Select-Object user,rights
+        $OwnerDiff = Compare-Object $Known $New -Property owner,group | Where-Object {$_.sideindicator -eq "=>"} | Select-Object owner,group
+        $Diff      = (New-Object psobject -Property @{OwnerDiff=$OwnerDiff;ACLDiff=$ACLDiff;})
+        
+    } 
+    Else {
         $KnownGoodDiscretionaryAcl = $Null
         $Diff = $Null
     }
-    $NewDiscretionaryAcl = $((ConvertFrom-SddlString $AttributeValue).DiscretionaryAcl)
-    
+        
     if ($diff) {
-        $WhatChanged = $(($Diff).InputObject)
+        $WhatChanged = (New-Object psobject -Property @{diff=$diff;new=$new;know=$known;}) 
     }
     ElseIf ($null -eq $KnownGoodDiscretionaryAcl) {
          $WhatChanged =  "No known good state, see NewDiscretionaryAcl and look for values that seem out of place."
@@ -31,12 +69,11 @@ Function Return-Facts {
          $WhatChanged =  "Effective permissions are the same as the known good state."
     }
 
-
     Return (New-Object psobject -Property @{
         'TimeGenerated'             = $Time
         'Message'                   = $Message
         'Location'                  = $ObjectDN
-        'ChangedBy'                 = $("$($SubjectDomainName)\$($SubjectUserName) ($($SubjectUserSid)")
+        'ChangedBy'                 = $("$($SubjectDomainName)\$($SubjectUserName) ($($SubjectUserSid))")
         'Actions'                   = $OperationType
         'WhatChanged'               = $WhatChanged
         'NewDiscretionaryAcl'       = $NewDiscretionaryAcl
@@ -83,10 +120,10 @@ Function Check-ACLMismatches {
             If ($ObjectDN -in $KnownGoods.Location) {
                 $KnownGoodSDDL = $($KnownGoods | Where-Object {$_.location -eq $ObjectDN }).SDDL
                 If ($KnownGoodSDDL -ne $AttributeValue ) {
-                    Return-Facts -Message "Found an ACL edit that mismatches with known good SDDL"
+                    Return-Facts -Message "ACL mismatches with known good state"
                 }
             } Else { 
-                Return-Facts -Message "Found an ACL edit on unknown location"
+                Return-Facts -Message "ACL with no known good state"
             }
         }    
     }
@@ -96,8 +133,28 @@ $KnownGoods = Import-Clixml -Path 'C:\Users\Administrator\Documents\MonitorACLCh
 $Events     = Get-Eventlog Security | Where-Object {$_.EventID -eq 5136}
 $Results    = Check-ACLMismatches -KnownGoods $KnownGoods -Events $Events
 
-# Basic result
-$results | ft TimeGenerated,Message,Location,Actions,ChangedBy,WhatChanged #NewDiscretionaryAcl,KnownGoodDiscretionaryAcl,NewSDDL,KnownGoodSDDL
+# Easy to read result
+ForEach ($result in $Results) {
+    Write-Host "[!] $($Result.Message)" -ForegroundColor Yellow
+    Write-Host "    [-] The event was generated at: " -ForegroundColor Green -NoNewline
+    Write-Host "$($result.TimeGenerated)"
+    Write-Host "    [-] The object that was changed: " -ForegroundColor Green -NoNewline
+    Write-Host "$($Result.Location)"    
+    Write-Host "    [-] The user that changed the object was: " -ForegroundColor Green -NoNewline
+    Write-Host "$($Result.ChangedBy)"
+    Write-Host "    [-] The action that was taken: " -ForegroundColor Green -NoNewline
+    Write-Host "$($Result.Actions)"
+    Write-Host "    [-] Things that where changed: " -ForegroundColor Green
+    if ($null -ne $result.WhatChanged.diff.OwnerDiff.Owner) {
+        Write-Host "    [x] The Owner of the object has been changed to: $($result.WhatChanged.diff.ownerdiff.Owner)" -ForegroundColor Red
+    }
+    if ($null -ne $result.WhatChanged.diff.ACLDiff.user) {
+        Write-Host "    [x] A new ACE for user $($result.WhatChanged.diff.ACLDiff.user) has been added." -ForegroundColor Red
+        Write-Host "        ACE Rights : $($result.WhatChanged.diff.ACLDiff.rights)" -ForegroundColor Red
+    }
+    Write-Host "    "
+}
+
 
 ## Full result
 # $results | fl TimeGenerated,Message,Location,Actions,ChangedBy,WhatChanged,NewDiscretionaryAcl,KnownGoodDiscretionaryAcl,NewSDDL,KnownGoodSDDL
