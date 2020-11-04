@@ -32,3 +32,5 @@ https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-bes
 
 4. Apply GPO's to the Domain Controllers OU and reboot them.  
 ![gpos](2020-11-04_16-52.png)
+
+5. Run `GetKnownGoods.ps1`. Make sure to update the paths for Export-CliXML and Import-CliXML.
