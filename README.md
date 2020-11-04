@@ -34,3 +34,15 @@ https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-bes
 ![gpos](2020-11-04_16-52.png)
 
 5. Run `GetKnownGoods.ps1`. Make sure to update the paths for Export-CliXML and Import-CliXML.
+
+## License
+
+MIT
+
+## Authors
+
+Justin Perdok ([@justin-p](https://github.com/justin-p/)), Orange Cyberdefense
+
+## Contributing
+
+Feel free to open issues, contribute and submit your Pull Requests. You can also ping me on Twitter ([@JustinPerdok](https://twitter.com/JustinPerdok))
