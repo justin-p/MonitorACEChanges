@@ -1,6 +1,6 @@
 # MonitorACEChanges
 
-**Please test this in a test enviorment before applying this in production.**
+**Please test this in a test environment before applying this in production.**
 
 ## Prerequisites
 
