@@ -63,7 +63,7 @@ Function Return-Facts {
         $WhatChanged = (New-Object psobject -Property @{diff=$diff;new=$new;know=$known;}) 
     }
     ElseIf ($null -eq $KnownGoodDiscretionaryAcl) {
-         $WhatChanged =  "No known good state, see NewDiscretionaryAcl and look for values that seem out of place."
+         $WhatChanged =  "No known good state, look for values that seem out of place."
     }
     ElseIf ($null -eq $diff) {
          $WhatChanged =  "Effective permissions are the same as the known good state."
@@ -79,7 +79,9 @@ Function Return-Facts {
         'NewDiscretionaryAcl'       = $NewDiscretionaryAcl
         'KnownGoodDiscretionaryAcl' = $KnownGoodDiscretionaryAcl
         'NewSDDL'                   = $AttributeValue
+        'NewSDDLString'             = $NewSDDLString
         'KnownGoodSDDL'             = $KnownGoodSDDL
+        'KnownGoodSDDLString'       = $KnownGoodSDDLString
     })
 }
 
@@ -144,13 +146,18 @@ ForEach ($result in $Results) {
     Write-Host "$($Result.ChangedBy)"
     Write-Host "    [-] The action that was taken: " -ForegroundColor Green -NoNewline
     Write-Host "$($Result.Actions)"
-    Write-Host "    [-] Things that where changed: " -ForegroundColor Green
-    if ($null -ne $result.WhatChanged.diff.OwnerDiff.Owner) {
-        Write-Host "    [x] The Owner of the object has been changed to: $($result.WhatChanged.diff.ownerdiff.Owner)" -ForegroundColor Red
-    }
-    if ($null -ne $result.WhatChanged.diff.ACLDiff.user) {
-        Write-Host "    [x] A new ACE for user $($result.WhatChanged.diff.ACLDiff.user) has been added." -ForegroundColor Red
-        Write-Host "        ACE Rights : $($result.WhatChanged.diff.ACLDiff.rights)" -ForegroundColor Red
+    if ($result.WhatChanged.GetType().Name -eq "string") {
+        Write-Host "    $($result.WhatChanged)" -ForegroundColor Yellow
+        $result.NewSDDLString | Select-Object owner,group,DiscretionaryAcl,SystemAcl| ConvertTo-Json -Depth 3
+    } Else {
+        Write-Host "    [-] Things that where changed: " -ForegroundColor Green
+        if ($null -ne $result.WhatChanged.diff.OwnerDiff.Owner) {
+            Write-Host "    [x] The owner of the object has been changed to: $($result.WhatChanged.diff.ownerdiff.Owner)" -ForegroundColor Red
+        }
+        if ($null -ne $result.WhatChanged.diff.ACLDiff.user) {
+            Write-Host "    [x] A new ACE for user $($result.WhatChanged.diff.ACLDiff.user) has been added." -ForegroundColor Red
+            Write-Host "        ACE Rights : $($result.WhatChanged.diff.ACLDiff.rights)" -ForegroundColor Red
+        }
     }
     Write-Host "    "
 }
