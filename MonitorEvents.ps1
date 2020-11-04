@@ -92,7 +92,12 @@ Function Check-ACLMismatches {
     }
 }
 
-$KnownGoods = Import-Clixml -Path 'C:\Users\username\Documents\MonitorACEChanges\KnownGoods.xml'
+$KnownGoods = Import-Clixml -Path 'C:\Users\Administrator\Documents\MonitorACLChanges\KnownGoods.xml'
 $Events     = Get-Eventlog Security | Where-Object {$_.EventID -eq 5136}
 $Results    = Check-ACLMismatches -KnownGoods $KnownGoods -Events $Events
+
+# Basic result
 $results | ft TimeGenerated,Message,Location,Actions,ChangedBy,WhatChanged #NewDiscretionaryAcl,KnownGoodDiscretionaryAcl,NewSDDL,KnownGoodSDDL
+
+## Full result
+# $results | fl TimeGenerated,Message,Location,Actions,ChangedBy,WhatChanged,NewDiscretionaryAcl,KnownGoodDiscretionaryAcl,NewSDDL,KnownGoodSDDL
