@@ -6,7 +6,7 @@ Due the lack of public examples on how to monitor for ACE changes in AD I create
 
 ## Example 1: Get current SDDLs
 
-`GetKnownGoods.ps1` will collect SDDL's of all the current AD Objects. This example then exportes these values to a XML file.  
+`GetKnownGoods.ps1` will collect SDDL's of all the current AD Objects. This example then exports these values to a XML file.  
 This process could be implemented to run on a schedule to collect this data over time. Another process could be implemented that compares these results to detect malicious activity.
 
 ## Example 2: Use EventID 5136 and known 'good' SDDL values to detect changes in ACE's.
