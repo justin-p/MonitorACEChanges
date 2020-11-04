@@ -132,7 +132,7 @@ Function Check-ACLMismatches {
 }
 
 $KnownGoods = Import-Clixml -Path 'C:\Users\Administrator\Documents\MonitorACLChanges\KnownGoods.xml'
-$Events     = Get-Eventlog Security | Where-Object {$_.EventID -eq 5136}
+$Events     = Get-Eventlog Security | Where-Object {$_.EventID -eq 5136} | Sort-Object Time
 $Results    = Check-ACLMismatches -KnownGoods $KnownGoods -Events $Events
 
 # Easy to read result
@@ -155,8 +155,11 @@ ForEach ($result in $Results) {
             Write-Host "    [x] The owner of the object has been changed to: $($result.WhatChanged.diff.ownerdiff.Owner)" -ForegroundColor Red
         }
         if ($null -ne $result.WhatChanged.diff.ACLDiff.user) {
-            Write-Host "    [x] A new ACE for user $($result.WhatChanged.diff.ACLDiff.user) has been added." -ForegroundColor Red
-            Write-Host "        ACE Rights : $($result.WhatChanged.diff.ACLDiff.rights)" -ForegroundColor Red
+            ForEach ($entry in $result.WhatChanged.diff.ACLDiff) {
+                Write-Host "    [x] A new ACE for user $($entry.user) has been added." -ForegroundColor Red
+                Write-Host "        ACE Rights : $($entry.rights)" -ForegroundColor Red            
+            }
+
         }
     }
     Write-Host "    "
