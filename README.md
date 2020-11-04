@@ -13,7 +13,11 @@ This process could be implemented to run on a schedule to collect this data over
 
 After configuring `Audit Directory Services Changes` and a SACL whenever a change to a ACE of a AD Object is made a Event with EventID 5136 is logged. `MonitorEvents.ps1` uses the data collected by previous example `GetKnownGoods.ps1` as known good values. It then compares these values against triggered events to determine what changed from the previously known 'good' state.
 
+*With known good states*  
 ![MonitorEvents.ps1](2020-11-04_22-23.png)
+
+*Without known good states*
+![MonitorEvents.ps1](2020-11-04_22-46.png)
 
 ### Prerequisites for Example 2.
 
