@@ -2,7 +2,7 @@
 
 **Note: please test this in a test environment before applying this in production. This should be considered as Proof of Concept code. Tested on Windows Server 2019 with an 2016 forest functional level.**
 
-Due the lack of public examples on how to monitor for ACE changes in AD I created these 2 PoC's. There are probally better was to monitor this that either work work or scale better, (for example using a SIEM), but this is mainly to show that if you know where to look you can collect enough data to monitor for ACE changes in Active Directory.
+Due the lack of public examples on how to monitor for ACE changes in AD I created these 2 PoC's. There are probally better was to monitor this that either work or scale better, (for example using a SIEM), but this is mainly to show that if you know where to look you can collect enough data to monitor for ACE changes in Active Directory.
 
 ## Example 1: Get current SDDLs
 
